@@ -6,8 +6,10 @@ import crypto from "crypto";
 const app = express();
 app.use(bodyParser.json());
 
-const workingKey = "474061969193407745E1EEE1F6B67EB9"; // Replace with your real CCAvenue working key
+// ✅ Use your CCAvenue production working key (for www.secure.ccavenue.com)
+const workingKey = "474061969193407745E1EEE1F6B67EB9"; // Replace if needed
 
+// 🔐 AES-128-CBC encryption (used by CCAvenue)
 function encrypt(plainText, key) {
   const md5Key = crypto.createHash("md5").update(key).digest();
   const iv = Buffer.from([...Array(16).keys()]);
@@ -17,6 +19,7 @@ function encrypt(plainText, key) {
   return encrypted;
 }
 
+// 🔓 AES-128-CBC decryption (used for enc_response)
 function decrypt(encryptedText, key) {
   const md5Key = crypto.createHash("md5").update(key).digest();
   const iv = Buffer.from([...Array(16).keys()]);
@@ -26,6 +29,7 @@ function decrypt(encryptedText, key) {
   return decrypted;
 }
 
+// 🔐 Encrypt endpoint — for Postman to get enc_request
 app.post("/encrypt", (req, res) => {
   try {
     const jsonData = JSON.stringify(req.body);
@@ -36,7 +40,7 @@ app.post("/encrypt", (req, res) => {
   }
 });
 
-// Optional: For decrypting enc_response from CCAvenue
+// 🔓 Decrypt endpoint — use to read enc_response from CCAvenue
 app.post("/decrypt", (req, res) => {
   try {
     const decrypted = decrypt(req.body.enc_response, workingKey);
@@ -46,6 +50,15 @@ app.post("/decrypt", (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log("✅ CCAvenue Encrypt API running on port 3000");
+// 🌍 Get your IP for CCAvenue whitelisting
+app.get("/myip", (req, res) => {
+  const forwarded = req.headers["x-forwarded-for"];
+  const ip = forwarded ? forwarded.split(",")[0] : req.socket.remoteAddress;
+  res.send(`Your public IP (send this to CCAvenue): ${ip}`);
+});
+
+// ✅ Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ CCAvenue Encrypt API running on port ${PORT}`);
 });
